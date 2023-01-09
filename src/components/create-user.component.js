@@ -28,7 +28,7 @@ export default class CreateUser extends Component {
 
     console.log(user);
 
-    axios.post('http://localhost:5000/users/add', user) //sends an http post request to the backend endpoint at that url. users.js is a backend file and received the username and saves it in the database
+    axios.post('https://cryptocurrency-portfolio-tracker-api.onrender.com/users/add', user) //sends an http post request to the backend endpoint at that url. users.js is a backend file and received the username and saves it in the database
       .then(res => console.log(res.data));
 
     this.setState({ //set back to nothing so they can enter another username after submitting

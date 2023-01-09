@@ -23,7 +23,7 @@ export default class EditCrypto extends Component {
   }
 
   componentDidMount() {
-    axios.get('http://localhost:5000/cryptos/'+this.props.match.params.id) //this.props.match.params.id cuz we're getting the ID from the url so were getting the crypto that has that id from the backend
+    axios.get('https://cryptocurrency-portfolio-tracker-api.onrender.com/cryptos/'+this.props.match.params.id) //this.props.match.params.id cuz we're getting the ID from the url so were getting the crypto that has that id from the backend
       .then(response => { //as a response it'll return that crypto
         this.setState({ //set the state of username, amount, price, date
           username: response.data.username,
@@ -36,7 +36,7 @@ export default class EditCrypto extends Component {
         console.log(error);
       })
 
-    axios.get('http://localhost:5000/users/') //get the users
+    axios.get('https://cryptocurrency-portfolio-tracker-api.onrender.com/users/') //get the users
       .then(response => {
         if (response.data.length > 0) {
           this.setState({
@@ -86,7 +86,7 @@ export default class EditCrypto extends Component {
 
     console.log(crypto);
 
-    axios.post('http://localhost:5000/cryptos/update/' + this.props.match.params.id, crypto) //this.props.match.params.id is just getting the id and were passing in 'crypto'
+    axios.post('https://cryptocurrency-portfolio-tracker-api.onrender.com/cryptos/update/' + this.props.match.params.id, crypto) //this.props.match.params.id is just getting the id and were passing in 'crypto'
       .then(res => console.log(res.data));
 
     window.location = '/';

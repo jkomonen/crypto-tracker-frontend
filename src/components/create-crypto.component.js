@@ -33,7 +33,7 @@ export default class CreateCrypto extends Component {
   //this is a react lifecycle method. componentDidMount() will auto be called right before anything displays on the page
   //were coding the dropdown menu
   componentDidMount() {
-    axios.get('http://localhost:5000/users/')
+    axios.get('https://cryptocurrency-portfolio-tracker-api.onrender.com/users/')
       .then(response => {
         if (response.data.length > 0) {
           this.setState({
@@ -94,7 +94,7 @@ export default class CreateCrypto extends Component {
 
     console.log(crypto);
 
-    axios.post('http://localhost:5000/cryptos/add', crypto)
+    axios.post('https://cryptocurrency-portfolio-tracker-api.onrender.com/cryptos/add', crypto)
       .then(res => console.log(res.data));
 
     window.location = '/'; //take user back to homepage after submitting

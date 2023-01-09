@@ -45,7 +45,7 @@ export default class CryptoList extends Component {
   //calls this before the page loads and add the list of cryptos to the state. 
   //cryptos.js gets all cryptos from the db and return it here as json
   componentDidMount() {
-    axios.get('http://localhost:5000/cryptos/') //sends an http post request to the backend endpoint at that url. users.js is a backend file and received the username and saves it in the database
+    axios.get('https://cryptocurrency-portfolio-tracker-api.onrender.com/cryptos/') //sends an http post request to the backend endpoint at that url. users.js is a backend file and received the username and saves it in the database
       .then(response => {
         this.setState({ cryptos: response.data }) //when we were getting usernames, we just got the username field cuz we didnt want the rest of the data. in this case, we want all the fields and we're going to put it in the 'cryptos' array on this line
       })
@@ -55,7 +55,7 @@ export default class CryptoList extends Component {
   }
 
   deleteCrypto(id) { //the object id that mongodb auto assign that we're going to be deleting
-    axios.delete('http://localhost:5000/cryptos/'+id) //sends a delete request to this url which is an exact route that is created in the backend
+    axios.delete('https://cryptocurrency-portfolio-tracker-api.onrender.com/cryptos/'+id) //sends a delete request to this url which is an exact route that is created in the backend
       .then(response => { console.log(response.data)}); //log its been deleted if successful
 
     //after deleting from the db, gotta delete whats being displayed to the user
