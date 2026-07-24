@@ -1,26 +1,27 @@
-import React, { Component } from 'react';
-import { Link } from 'react-router-dom';
+import React from 'react';
+import { NavLink } from 'react-router-dom';
 
-export default class Navbar extends Component {
-
-  render() {
-    return (
-      <nav className="navbar navbar-dark bg-danger navbar-expand-lg py-3">
-        <Link to="/" className="navbar-brand">Crypto Portfolio Tracker</Link>
-        <div className="collapse navbar-collapse">
-        <ul className="navbar-nav mr-auto">
-          {/* <li className="navbar-item">
-          <Link to="/" className="nav-link">Exercises</Link>
-          </li> */}
-          <li className="navbar-item">
-          <Link to="/create" className="nav-link">Add To Portfolio</Link>
+export default function Navbar() {
+  return (
+    <header className="navbar">
+      <div className="navbar-inner">
+        <NavLink to="/" className="navbar-brand">
+          <span className="navbar-brand-mark">₿</span>
+          Portfolio
+        </NavLink>
+        <ul className="navbar-links">
+          <li>
+            <NavLink to="/create" className="navbar-link" activeClassName="is-active">
+              Add Holding
+            </NavLink>
           </li>
-          <li className="navbar-item">
-          <Link to="/user" className="nav-link">Add New Cryptocurrency</Link>
+          <li>
+            <NavLink to="/user" className="navbar-link" activeClassName="is-active">
+              New Cryptocurrency
+            </NavLink>
           </li>
         </ul>
-        </div>
-      </nav>
-    );
-  }
+      </div>
+    </header>
+  );
 }

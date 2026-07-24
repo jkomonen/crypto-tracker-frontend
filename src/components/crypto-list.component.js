@@ -1,97 +1,166 @@
-//gonna be the homepage
-//gonna show every excercise in the database
-
-import React, { Component } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import axios from 'axios'; //sends hhtp requests from the frontend to backend (server)
+import axios from 'axios';
 
-//difference between functional and class react component is lack of state and lifecycle (componentDidMount()) methods
-//if all u need to do it accept props and return JSX, use a function component instead of class
+const API_URL = 'https://cryptocurrency-portfolio-tracker-api.onrender.com/cryptos/';
 
-//component #1
-//implemented as a functional react component
-//we usually put all components in their own files but this is so small we just put it here
-//this component is accepting props passed to it (return <crypto crypto={currentcrypto} deletecrypto={this.deletecrypto} key={currentcrypto._id}/>;)
-//then its going to return a row of the table
-//substring cuz date has date, time, and timezone and we just was the first part (date part)
-//now were using <Link> from react-router-dom to link to a certain url which will load another component on the page
-//edit button that goes to edit crypto component
-//delete button so onclick it called props.deletecrypto
-//squigglies cuz it wants it wants the a href to be a  instead of a link
-const Crypto = props => (
-  <tr>
-    <td>{props.crypto.username}</td>
-    <td>{props.crypto.amount}</td>
-    <td>{props.crypto.price}</td>
-    <td>{props.crypto.date.substring(0,10)}</td> 
-    <td>
-      <Link to={"/edit/"+props.crypto._id}>edit</Link> | <a href="#" onClick={() => { props.deleteCrypto(props.crypto._id) }}>delete</a>
-    </td>
-  </tr>
-)
+const AVATAR_PALETTE = [
+  '#0071e3', '#ff9f0a', '#34c759', '#af52de',
+  '#ff375f', '#5ac8fa', '#ffd60a', '#30d158',
+];
 
-//component #2
-//implemented as a class component
-export default class CryptoList extends Component {
-  constructor(props) {
-    super(props); //need to call super when defining the constructor of a subclass. all react component classes that have a constructor start with a super props call
+function avatarColor(name) {
+  const code = (name || '').split('').reduce((sum, ch) => sum + ch.charCodeAt(0), 0);
+  return AVATAR_PALETTE[code % AVATAR_PALETTE.length];
+}
 
-    this.deleteCrypto = this.deleteCrypto.bind(this) //method called deletecrypto cuz in the list of cryptos, you're gonna be able to click a button and delete the crypto
+const currency = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
+const number = new Intl.NumberFormat('en-US', { maximumFractionDigits: 6 });
 
-    this.state = {cryptos: []}; //set state to empty array of cryptos
-  }
+function SkeletonRows() {
+  return (
+    <div className="card">
+      {[0, 1, 2].map(i => (
+        <div className="skeleton-row" key={i}>
+          <div className="skeleton" style={{ width: 38, height: 38, borderRadius: '50%' }} />
+          <div style={{ flex: 1 }}>
+            <div className="skeleton" style={{ width: '35%', height: 14, marginBottom: 8 }} />
+            <div className="skeleton" style={{ width: '20%', height: 12 }} />
+          </div>
+          <div className="skeleton" style={{ width: 70, height: 14 }} />
+        </div>
+      ))}
+    </div>
+  );
+}
 
-  //now we get the list of cryptos from the database
-  //calls this before the page loads and add the list of cryptos to the state. 
-  //cryptos.js gets all cryptos from the db and return it here as json
-  componentDidMount() {
-    axios.get('https://cryptocurrency-portfolio-tracker-api.onrender.com/cryptos/') //sends an http post request to the backend endpoint at that url. users.js is a backend file and received the username and saves it in the database
+function EmptyState() {
+  return (
+    <div className="card">
+      <div className="empty-state">
+        <div className="empty-state-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+          </svg>
+        </div>
+        <div className="empty-state-title">No holdings yet</div>
+        <p className="empty-state-text">Add your first cryptocurrency purchase to start tracking your portfolio.</p>
+        <div style={{ marginTop: 20 }}>
+          <Link to="/create" className="btn btn-primary" style={{ display: 'inline-flex', width: 'auto', padding: '10px 22px' }}>
+            Add To Portfolio
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Holding({ crypto, onDelete }) {
+  const amount = parseFloat(crypto.amount) || 0;
+  const price = parseFloat(crypto.price) || 0;
+  const value = amount * price;
+
+  return (
+    <div className="holding-row fade-in">
+      <div className="holding-avatar" style={{ background: avatarColor(crypto.username) }}>
+        {(crypto.username || '?').charAt(0)}
+      </div>
+      <div className="holding-main">
+        <div className="holding-name">{crypto.username}</div>
+        <div className="holding-meta">
+          {number.format(amount)} · purchased {crypto.date.substring(0, 10)}
+        </div>
+      </div>
+      <div className="holding-figures">
+        <div className="holding-value">{currency.format(value)}</div>
+        <div className="holding-price">{currency.format(price)} / unit</div>
+      </div>
+      <div className="holding-actions">
+        <Link to={`/edit/${crypto._id}`} className="icon-btn" title="Edit">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <path d="M12 20h9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </Link>
+        <button className="icon-btn danger" title="Delete" onClick={() => onDelete(crypto._id)}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6h16Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  );
+}
+
+export default function CryptoList() {
+  const [cryptos, setCryptos] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    axios.get(API_URL)
       .then(response => {
-        this.setState({ cryptos: response.data }) //when we were getting usernames, we just got the username field cuz we didnt want the rest of the data. in this case, we want all the fields and we're going to put it in the 'cryptos' array on this line
+        setCryptos(response.data);
+        setLoading(false);
       })
       .catch((error) => {
         console.log(error);
-      })
-  }
+        setLoading(false);
+      });
+  }, []);
 
-  deleteCrypto(id) { //the object id that mongodb auto assign that we're going to be deleting
-    axios.delete('https://cryptocurrency-portfolio-tracker-api.onrender.com/cryptos/'+id) //sends a delete request to this url which is an exact route that is created in the backend
-      .then(response => { console.log(response.data)}); //log its been deleted if successful
+  const deleteCrypto = useCallback((id) => {
+    if (!window.confirm('Remove this holding from your portfolio?')) return;
 
-    //after deleting from the db, gotta delete whats being displayed to the user
-    this.setState({ //set the state of 'cryptos' and react will auto update the page with the new state
-      cryptos: this.state.cryptos.filter(el => el._id !== id) //this.state.cryptos (the array of cryptos), filter means its going to return certain elements back to 'cryptos'
-    }) //continuation. for every element in cryptos array, return it if id != id. So, the one we want to delete doesn't get passed back
-  } //_id is underscore because mongodb is _id
+    axios.delete(API_URL + id)
+      .then(response => console.log(response.data))
+      .catch((error) => console.log(error));
 
-  cryptoList() {
-    return this.state.cryptos.map(currentcrypto => { //.map will return something for every element in the array. so, for every element called 'currentcrypto', return a component which is basicall a row of the table
-      return <Crypto crypto={currentcrypto} deleteCrypto={this.deleteCrypto} key={currentcrypto._id}/>;
-    }) //continuation. were going to pass in 3 props. essentially variable name (crypto) = value: (currentcrypto)
-  }
+    setCryptos(prev => prev.filter(el => el._id !== id));
+  }, []);
 
-  //html like
-  //whats going to display on the page
-  //body is going to the call the cryptoList method which will return the rows of the table
-  render() {
-    return (
-      <div>
-        <h3>My Portfolio</h3>
-        <table className="table">
-          <thead className="thead-light">
-            <tr>
-              <th>Cryptocurrency</th>
-              <th>Amount Purchased</th>
-              <th>Price</th>
-              <th>Purchase Date</th>
-              <th>Update</th>
-            </tr>
-          </thead>
-          <tbody>
-            { this.cryptoList() }
-          </tbody>
-        </table>
+  const totalValue = cryptos.reduce((sum, c) => sum + (parseFloat(c.amount) || 0) * (parseFloat(c.price) || 0), 0);
+  const uniqueAssets = new Set(cryptos.map(c => c.username)).size;
+
+  return (
+    <div>
+      <div className="page-header">
+        <div className="page-header-row">
+          <div>
+            <h1 className="page-title">My Portfolio</h1>
+            <p className="page-subtitle">A snapshot of everything you're holding.</p>
+          </div>
+          <Link to="/create" className="btn btn-primary" style={{ width: 'auto', padding: '10px 20px' }}>
+            + Add Holding
+          </Link>
+        </div>
       </div>
-    )
-  }
+
+      <div className="stat-grid">
+        <div className="stat-card">
+          <div className="stat-label">Total Value</div>
+          <div className="stat-value">{currency.format(totalValue)}</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-label">Holdings</div>
+          <div className="stat-value">{cryptos.length}</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-label">Unique Assets</div>
+          <div className="stat-value">{uniqueAssets}</div>
+        </div>
+      </div>
+
+      {loading ? (
+        <SkeletonRows />
+      ) : cryptos.length === 0 ? (
+        <EmptyState />
+      ) : (
+        <div className="card">
+          {cryptos.map(crypto => (
+            <Holding crypto={crypto} onDelete={deleteCrypto} key={crypto._id} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }

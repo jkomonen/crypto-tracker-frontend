@@ -1,61 +1,65 @@
-import React, { Component } from 'react';
-import axios from 'axios'; //sends hhtp requests from the frontend to backend (server)
+import React, { useState } from 'react';
+import axios from 'axios';
 
-export default class CreateUser extends Component {
-  constructor(props) {
-    super(props);
+const API_URL = 'https://cryptocurrency-portfolio-tracker-api.onrender.com/users/add';
 
-    this.onChangeUsername = this.onChangeUsername.bind(this);
-    this.onSubmit = this.onSubmit.bind(this);
+export default function CreateUser() {
+  const [username, setUsername] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [justAdded, setJustAdded] = useState('');
 
-    this.state = {
-      username: ''
-    }
-  }
-
-  onChangeUsername(e) {
-    this.setState({
-      username: e.target.value
-    })
-  }
-
-  onSubmit(e) {
+  function onSubmit(e) {
     e.preventDefault();
+    setSubmitting(true);
 
-    const user = {
-      username: this.state.username
-    }
-
+    const user = { username };
     console.log(user);
 
-    axios.post('https://cryptocurrency-portfolio-tracker-api.onrender.com/users/add', user) //sends an http post request to the backend endpoint at that url. users.js is a backend file and received the username and saves it in the database
-      .then(res => console.log(res.data));
-
-    this.setState({ //set back to nothing so they can enter another username after submitting
-      username: '' 
-    })
+    axios.post(API_URL, user)
+      .then(res => {
+        console.log(res.data);
+        setJustAdded(username);
+        setUsername('');
+        setSubmitting(false);
+      })
+      .catch((error) => {
+        console.log(error);
+        setSubmitting(false);
+      });
   }
 
-  render() {
-    return (
-      <div>
-        <h3>Add New Cryptocurrency</h3>
-        <form onSubmit={this.onSubmit}>
-          <div className="form-group"> 
-            {/* <label>Cryptocurrency: </label> */}
-            <label></label>
-            <input  type="text"
-                required
-                className="form-control"
-                value={this.state.username}
-                onChange={this.onChangeUsername}
-                />
+  return (
+    <div>
+      <div className="page-header">
+        <h1 className="page-title">Add New Cryptocurrency</h1>
+        <p className="page-subtitle">Register a new asset so it can be added to a portfolio.</p>
+      </div>
+
+      <div className="form-card">
+        <form onSubmit={onSubmit}>
+          <div className="form-field">
+            <label>Cryptocurrency Name</label>
+            <input
+              type="text"
+              required
+              className="form-input"
+              placeholder="e.g. Bitcoin"
+              value={username}
+              onChange={e => setUsername(e.target.value)}
+            />
           </div>
-          <div className="form-group">
-            <input type="submit" value="Add New Cryptocurrency" className="btn btn-primary" />
-          </div>
+
+          <button type="submit" className="btn btn-primary" disabled={submitting}>
+            {submitting ? 'Adding…' : 'Add New Cryptocurrency'}
+          </button>
+
+          {justAdded && (
+            <p style={{ marginTop: 14, fontSize: 13, color: 'var(--color-success)', textAlign: 'center' }}>
+              “{justAdded}” was added.
+            </p>
+          )}
         </form>
       </div>
-    )
-  }
+    </div>
+  );
 }
