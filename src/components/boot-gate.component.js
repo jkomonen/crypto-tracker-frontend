@@ -3,13 +3,25 @@ import axios from 'axios';
 
 import API_BASE from '../api';
 
-// How long a single health request is given before we assume it was swallowed
-// by the cold start and try again.
-const ATTEMPT_TIMEOUT_MS = 6000;
-const RETRY_DELAY_MS = 1500;
-// Render's free tier usually needs 20-50s from cold. Past this we stop waiting
-// and let the user decide.
-const GIVE_UP_MS = 120000;
+// The probe deliberately hits a route the app itself uses rather than /health.
+// /health only exists on a backend built after it was added, and more
+// importantly a real app route is guaranteed to carry the CORS headers the
+// browser needs before it will let us read the response at all.
+const PROBE_URL = `${API_BASE}/cryptos/`;
+
+// Render queues a request aimed at a spun-down service and answers it from the
+// container once it finishes booting, so the single most reliable way to wait
+// out a cold start is to let one request ride the whole way.
+//
+// An earlier version aborted each attempt after 6s and retried. That could
+// never succeed: a boot takes ~30s, so every attempt timed out, and each retry
+// went back to the end of the queue. Worse, a retry that arrives mid-boot can
+// be answered by Render's own error page, which carries no CORS headers — the
+// browser blocks it, so it reaches us as an indistinguishable network error
+// rather than a readable status. Hence one long attempt, not many short ones.
+const ATTEMPT_TIMEOUT_MS = 120000;
+const RETRY_DELAY_MS = 3000;
+const GIVE_UP_MS = 180000;
 // Don't flash the screen at people whose backend is already awake.
 const SHOW_AFTER_MS = 450;
 // After this long it's clearly a cold start, so explain what's happening.
@@ -27,7 +39,7 @@ export default function BootGate({ children }) {
   const [attempt, setAttempt] = useState(1);
   const startedAt = useRef(Date.now());
 
-  // Poll the health endpoint until the server answers.
+  // Wait for the server to answer.
   useEffect(() => {
     if (status !== 'waking') return undefined;
 
@@ -36,15 +48,15 @@ export default function BootGate({ children }) {
 
     const ping = () => {
       axios
-        .get(`${API_BASE}/health`, { timeout: ATTEMPT_TIMEOUT_MS })
+        .get(PROBE_URL, { timeout: ATTEMPT_TIMEOUT_MS })
         .then(() => {
           if (!cancelled) setStatus('ready');
         })
         .catch(error => {
           if (cancelled) return;
-          // Any HTTP status at all means the container is up and serving — a
-          // 404 just means this build is talking to a backend that predates
-          // /health. Only a timeout or a network error means it's still cold.
+          // Any readable HTTP status means the container is up and serving,
+          // even a 4xx or 5xx — the app's own error handling can take it from
+          // here. Only a timeout or a blocked/failed request means it's cold.
           if (error.response) {
             setStatus('ready');
             return;
