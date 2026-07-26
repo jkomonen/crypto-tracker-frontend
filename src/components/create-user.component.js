@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 
-const API_URL = 'https://cryptocurrency-portfolio-tracker-api.onrender.com/users/add';
+import API_BASE from '../api';
+
+const API_URL = `${API_BASE}/users/add`;
 
 export default function CreateUser() {
   const [username, setUsername] = useState('');

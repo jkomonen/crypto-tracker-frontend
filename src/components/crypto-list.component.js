@@ -2,7 +2,9 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 
-const API_URL = 'https://cryptocurrency-portfolio-tracker-api.onrender.com/cryptos/';
+import API_BASE from '../api';
+
+const API_URL = `${API_BASE}/cryptos/`;
 
 const AVATAR_PALETTE = [
   '#0071e3', '#ff9f0a', '#34c759', '#af52de',
